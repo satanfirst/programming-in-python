@@ -58,7 +58,8 @@ class Client:
 
 
 def main():
-    client = Client("127.0.0.1", 8888, timeout=15)
+    pass
+    #client = Client("127.0.0.1", 8888, timeout=15)
     # client.put("palm.cpu", 10, timestamp=1150864248)
     # client.put("palm.cpu", 1, timestamp=1150864247)
     # client.put("palm.cpu", 0.5, timestamp=1150864248)
@@ -68,7 +69,7 @@ def main():
     # client.put("eardrum.cpu", 4, timestamp=1000864251)
     # client.put("palm.cpu", 0.5, timestamp=5000864240)
     # client.put("eardrum.memory", 2, timestamp=1000004251)
-    print(client.get("*"))
+    #print(client.get("*"))
 
 
 if __name__ == '__main__':
