@@ -1,7 +1,6 @@
 import asyncio
 
 
-
 def run_server(host, port):
     loop = asyncio.get_event_loop()
     coro = loop.create_server(
@@ -19,17 +18,18 @@ def run_server(host, port):
 
 
 class ClientServerProtocol(asyncio.Protocol):
+    storage = {}
+
     def connection_made(self, transport):
         peername = transport.get_extra_info('peername')
         print(f'Connection from {peername}')
         self.transport = transport
-        self.storage = {}
 
     def data_received(self, data):
         resp = self.process_data(data.decode('utf-8'), self.storage)
         print(self.storage)
         print(f'Data received: {data}')
-        self.transport.write(b'ok')
+        self.transport.write(resp.encode())
         print(f'Send: {resp}')
 
     @staticmethod
@@ -41,22 +41,38 @@ class ClientServerProtocol(asyncio.Protocol):
                 value = float(raw_data[2])
                 timestamp = int(raw_data[3].split(sep='\n')[0])
                 if type(name) is str and type(value) is float \
-                        and type(timestamp) is int:
+                        and type(timestamp) is int and len(raw_data) == 4:
                     if storage.get(raw_data[1]):
-                        storage[raw_data[1]].append([value, timestamp])
+                        # check duplicate and timestamps
+                        key = raw_data[1]
+                        res = check_duplicate_and_timestamps(storage, key, timestamp, value)
+                        if res == 'new':
+                            storage[key].append([value, timestamp])
+                        storage[key].sort(key=lambda x: x[1])
                     else:
                         storage[raw_data[1]] = [[value, timestamp]]
                     return 'ok\n\n'
             except:
-                return 'error1\nwrong command\n\n'
+                return 'error\nwrong command\n\n'
         if data.startswith('get ') and data.endswith('\n'):
             try:
                 raw_data = data.split(sep=' ')
                 req = raw_data[1][:-1]
-                return _read(storage, req)
+                if len(raw_data) == 2:
+                    return _read(storage, req.strip())
             except:
                 return 'error\nwrong command\n\n'
         return 'error\nwrong command\n\n'
+
+
+def check_duplicate_and_timestamps(storage, k, timestamp, value):
+    for item in storage[k]:
+        if item[1] == timestamp and item[0] != value:
+            item[0] = value
+            return 'update'
+        elif item[1] == timestamp and item[0] == value:
+            return 'duplicate'
+    return 'new'
 
 
 def _read(d, val):
